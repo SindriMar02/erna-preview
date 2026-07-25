@@ -3,11 +3,14 @@
 **DO NOT SEND BEFORE 4 AUGUST 2026.** The workshop is closed 6 July to 4 August
 (verified on erna.is, 2026-07-25). Drafted 2026-07-25.
 
-**Two blockers before this can go out:**
-1. The prototype is **not deployed**. `[HLEKKUR Á FRUMGERÐ]` has no URL to hold yet.
-   The outreach guide requires the live link to return 200 before sending.
-2. Send method is **B, manual paste** (not C), precisely because there is no live link
-   and therefore nothing for the script to fill in.
+**Status: ready to send, held on timing only.**
+The prototype is live and returns 200: **https://sindrimar02.github.io/erna-preview**
+(noindex, so it can never compete with erna.is in search).
+
+**The one remaining judgement call is the date.** ERNA is closed 6 July to 4 August;
+today is 25 July, so this would land in an unmonitored inbox with 10 days of holiday
+backlog on top of it before anyone reads it. The teardown spec says do not mail before
+4 August for exactly that reason. Sending is Sindri's call, not mine.
 
 - **To:** erna@erna.is (MX verified: `spamvorn.internet.is`, mail will deliver)
 - **Attachments:** `~/Downloads/sndr-scouting-banner.png` (top of body),
@@ -36,11 +39,11 @@ sýnir silfrið sjálft. Eins og vefurinn er í dag eru fáar myndir á forsíð
 þeirra birtast ekki.
 
 Mér fannst það synd, svo ég settist niður og hannaði frumgerð að nýrri forsíðu fyrir
-ykkur. Ég sá að verkstæðið var lokað í sumarleyfi í júlí og vildi ekki trufla ykkur á
-meðan. Þetta kostar ykkur ekki neitt og því fylgir engin skuldbinding.
+ykkur. Ég sé að júlí er sumarleyfismánuður hjá ykkur, svo það liggur ekkert á. Þetta kostar
+ykkur ekki neitt og því fylgir engin skuldbinding.
 
 Hana má skoða hér hvenær sem er, og hún virkar vel í síma:
-[HLEKKUR Á FRUMGERÐ]
+https://sindrimar02.github.io/erna-preview
 
 Hugmyndin er einföld. Að fólk sjái strax hvað þið smíðið, að stimpillinn fái að vera
 aðalatriðið og að hægt sé að finna verð og opnunartíma án þess að leita. Ef ykkur líst vel
@@ -67,7 +70,13 @@ fact-check rule.
 | They keep a register of Icelandic makers' marks | erna.is/stimplasida, page last modified 2026-06-16 |
 | Same family, one hundred years | Their own history page: founded 3 Feb 1924, "3ja og 4ða kynslóð fjölskyldunnar við störf" |
 | Few images on the homepage, some do not display | Measured 2026-07-25: 6 images, several with `naturalWidth: 0` |
-| Closed for holidays in July | Banner on a post modified 2026-07-10: "lokað frá 6. júlí til 4. ágúst" |
+| July is their holiday month | Banner on a post modified 2026-07-10: "lokað frá 6. júlí til 4. ágúst" |
+
+The closure sentence is deliberately **tense-neutral**. The earlier draft read
+"verkstæðið *var* lokað" (past tense), which is written for a send after they reopen and
+is simply false if the mail goes out during the closure. "Ég sé að júlí er
+sumarleyfismánuður hjá ykkur, svo það liggur ekkert á" is true on any date and doubles as
+the no-pressure note.
 
 Deliberately **not** claimed: nothing about how long the site has looked this way, no
 superlative about the register being unique in Iceland (only that I had not seen one
