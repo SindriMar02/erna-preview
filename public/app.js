@@ -92,6 +92,8 @@
   const wordmark = $('#wordmark');
   const hdr = $('#hdr');
   const stepper = $('#stepper');
+  const railTrack = $('#railTrack');
+  const railProg = $('.rail-prog');
   const stepEls = $$('.fs');
   const ticks = $$('.pg-t');
   const dipCount = $('#dipCount');
@@ -146,7 +148,11 @@
     ...$$('.js-par').map((el) => ({ el, masked: false, amp: -34, chRv: null, chPar: chan(0.22), rv: -1, par: null, r: null })),
   ];
 
-  stepEls.forEach((el) => { el._ch = chan(0.12); el._seg = -1; el._out = -1; });
+  stepEls.forEach((el) => { el._seg = -1; el._px = null; });
+  const chRail = chan(0.11);
+  let lastMaxX = -1;
+  /* the journey is desktop-only; below this it is a vertical stack by design */
+  const railOn = matchMedia('(min-width: 1024px)');
   tlEls.forEach((el) => { el._ch = chan(0.12); el._out = -1; });
   const chMask = chan(0.09);
   const chFlight = chan(0.09);
@@ -253,24 +259,43 @@
 
     if (hdr) hdr.classList.toggle('is-down', y > M.heroH * 0.75);
 
-    /* --- sticky mask stepper: damped, eased arrival -------------------- */
-    if (stepper && stepEls.length) {
-      const local = clamp((y - M.stepTop) / Math.max(1, M.stepH - vh));
-      const n = stepEls.length;
-      const idx = Math.min(n - 1, Math.floor(local * n + 0.0001));
-      for (let i = 0; i < n; i++) {
-        const raw = i === 0 ? 1 : clamp(local * n - i);
-        const seg = adv(stepEls[i]._ch, smooth01(raw), dt);
-        const el = stepEls[i];
-        if (el._seg !== seg) { el.style.setProperty('--seg', seg.toFixed(4)); el._seg = seg; }
-        if (i > 0) {
-          const below = stepEls[i - 1];
-          if (below._out !== seg) { below.style.setProperty('--out', seg.toFixed(4)); below._out = seg; }
-        }
+    /* --- THE HORIZONTAL JOURNEY ---------------------------------------
+       Scroll distance maps 1:1 to track travel. One damped channel writes
+       --rx; every panel then derives its own reveal from where it actually
+       sits in the viewport, which is the native equivalent of GSAP's
+       containerAnimation with left-based starts (ledger #42). */
+    if (stepper && railTrack && stepEls.length && railOn.matches) {
+      const maxX = Math.max(0, railTrack.scrollWidth - innerWidth);
+      if (maxX !== lastMaxX) {
+        lastMaxX = maxX;
+        stepper.style.setProperty('--travel', maxX + 'px');
       }
-      if (idx !== stepState) {
-        stepState = idx;
-        ticks.forEach((tk, i) => tk.classList.toggle('is-on', i === idx));
+      const prog = clamp((y - M.stepTop) / Math.max(1, M.stepH - vh));
+      const rx = adv(chRail, prog, dt) * maxX;
+      railTrack.style.setProperty('--rx', rx.toFixed(2) + 'px');
+      if (railProg) railProg.style.setProperty('--rp', (maxX ? rx / maxX : 0).toFixed(4));
+
+      const vw = innerWidth;
+      let best = 0, bestD = Infinity;
+      for (let i = 0; i < stepEls.length; i++) {
+        const el = stepEls[i];
+        const px = el.offsetLeft - rx;              // panel's left edge, viewport coords
+        const w = el.offsetWidth || vw;
+        const enter = clamp((vw - px) / (vw * 0.72));       // arrival: clip + copy
+        const pass = clamp((vw - px) / (vw + w));           // full traverse: drift
+        if (el._seg !== enter) {
+          el.style.setProperty('--seg', enter.toFixed(4));
+          el.style.setProperty('--clipR', ((1 - enter) * 100).toFixed(2) + '%');
+          el._seg = enter;
+        }
+        const drift = 7.5 - pass * 15;
+        if (el._px !== drift) { el.style.setProperty('--px', drift.toFixed(2)); el._px = drift; }
+        const d = Math.abs(px + w / 2 - vw / 2);
+        if (d < bestD) { bestD = d; best = i; }
+      }
+      if (best !== stepState) {
+        stepState = best;
+        ticks.forEach((tk, i) => tk.classList.toggle('is-on', i === best));
       }
     }
 

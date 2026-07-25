@@ -197,6 +197,12 @@ body.loaded .loader { transition: opacity .3s .55s var(--ease-out-sine); opacity
 /* no JS, no loader. Nobody gets stuck behind a plate that never opens.
    body.is-loading is what locks the scroll, so it is what has to be released. */
 @media (scripting: none) {
+  .stepper { height: auto; }
+  .rail-vp { position: static; height: auto; overflow: visible; }
+  .rail-track { display: block; width: auto; transform: none; }
+  .fs { width: auto; height: 100svh; clip-path: none; }
+  .fs-media { clip-path: none; }
+  .pg, .rail-prog { display: none; }
   .loader { display: none; }
   body, body.is-loading { overflow: auto; }
   [data-rise] { --ri: 1; opacity: 1; transform: none; }
@@ -640,38 +646,34 @@ body.loaded .hero-meta   { opacity: clamp(0, var(--fade), 1); }
 /* --- the sticky mask stepper ------------------------------------------- */
 .step-head { margin-bottom: clamp(34px, 4.4vh, 66px); }
 .step-lead { margin-top: 20px; color: color-mix(in srgb, var(--sheet) 62%, transparent); }
-.stepper { position: relative; height: 215svh; }
-.masks { position: sticky; top: 0; height: 100svh; overflow: clip; }
-/* Successive plates are revealed BY MASK, never by fade. The edge is a wide
-   feather rather than a clip-path line, so it does not read as a scanline, and
-   the plate underneath RECEDES as it is covered: it scales back and dims, which
-   is what gives the stack depth instead of one flat card sliding over another. */
-.fs {
-  position: absolute; inset: 0;
-  --seg: 0; --out: 0;
-  transform: scale(calc(1 - var(--out) * .055));
-  transform-origin: 50% 42%;
-  -webkit-mask-image: linear-gradient(to top,
-    #000 calc(var(--seg) * 116% - 16%), transparent calc(var(--seg) * 116%));
-  mask-image: linear-gradient(to top,
-    #000 calc(var(--seg) * 116% - 16%), transparent calc(var(--seg) * 116%));
-  will-change: transform, mask-image;
-}
-.fs[data-step='0'] { --seg: 1; -webkit-mask-image: none; mask-image: none; }
-/* the dimming veil for the receding plate, above its own content */
-.fs::before {
-  content: ''; position: absolute; inset: 0; z-index: 5; pointer-events: none;
-  background: var(--plate); opacity: calc(var(--out) * .5);
-}
-.fs-media { position: absolute; inset: 0; overflow: hidden; }
-.fs-img {
-  max-width: none;
-  position: absolute; left: -3%; top: -3%; width: 106%; height: 106%; object-fit: cover;
-  /* the arriving plate settles rather than appearing already at rest */
-  transform: scale(calc(1 + (1 - var(--seg)) * .07));
+/* THE HORIZONTAL JOURNEY (Búðir engine, rebuilt native).
+   A tall spacer pins a viewport-height rail; scroll distance maps 1:1 to the
+   track's horizontal travel. No GSAP, no Lenis: the damped engine already
+   running the page drives --rx, so the traverse inherits its inertia.
+   Desktop only (>=1024px, no reduced motion) — below that it is a plain
+   vertical stack, which is the intentional fallback, not a failure. */
+.stepper { position: relative; height: calc(100svh + var(--travel, 200vw)); }
+.rail-vp { position: sticky; top: 0; height: 100svh; overflow: hidden; }
+.rail-track {
+  display: flex; width: max-content; height: 100%;
+  transform: translate3d(calc(var(--rx, 0px) * -1), 0, 0);
   will-change: transform;
 }
-.fs-body { z-index: 6; }
+.fs { position: relative; flex: none; width: 100vw; height: 100%; }
+.fs-media {
+  position: absolute; inset: 0; overflow: hidden;
+  /* the photograph assembles from its leading edge as the panel arrives,
+     a clip reveal and never a transform (Búðir §9: two moving copies of one
+     photo just read as a duplicate sliding away) */
+  clip-path: inset(0 var(--clipR, 0%) 0 0);
+}
+.fs-img {
+  max-width: none;
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+  /* constant scale with lateral drift: the frame never exposes an edge */
+  transform: translate3d(calc(var(--px, 0) * 1%), 0, 0) scale(1.16);
+  will-change: transform;
+}
 .fs-media::after {
   content: ''; position: absolute; inset: 0;
   background: linear-gradient(180deg, rgba(9,7,14,.72) 0%, rgba(9,7,14,.28) 38%, rgba(9,7,14,.88) 100%);
@@ -680,18 +682,8 @@ body.loaded .hero-meta   { opacity: clamp(0, var(--fade), 1); }
   z-index: 6;
   position: absolute; left: var(--gut); right: var(--gut); bottom: clamp(44px, 9vh, 110px);
   max-width: 46ch; color: var(--sheet);
-  /* The mask feather is wide on purpose, but text read through it means two
-     plates' copy overlapping. Copy is gated on its own curve: it arrives only
-     in the last third of the plate's travel and leaves as soon as the next
-     plate starts covering it. */
-  /* Crossfading in place either ghosts two labels over each other or leaves a
-     blank window. They PASS each other instead: the leaving copy rises out
-     while the arriving copy rises in, which is the same rolling-label law the
-     diptych column already uses. */
-  --in: clamp(0, (var(--seg) - .15) / .40, 1);
-  --gone: clamp(0, var(--out) / .45, 1);
-  opacity: calc(var(--in) * (1 - var(--gone)));
-  transform: translate3d(0, calc((1 - var(--in)) * 34px - var(--gone) * 34px), 0);
+  opacity: clamp(0, (var(--seg) - .12) / .38, 1);
+  transform: translate3d(calc((1 - var(--seg)) * 46px), 0, 0);
 }
 .fs-n { color: var(--steel-lift); }
 .fs-word {
@@ -704,16 +696,32 @@ body.loaded .hero-meta   { opacity: clamp(0, var(--fade), 1); }
   letter-spacing: .04em; margin-top: 18px; }
 .fs-b { margin-top: 12px; color: color-mix(in srgb, var(--sheet) 76%, transparent); }
 
-/* the ticks live inside the sticky layer, or they scroll off with the parent */
-.pg { position: absolute; right: var(--gut); top: 50%; transform: translateY(-50%); z-index: 3;
+.pg { position: absolute; right: var(--gut); top: 50%; transform: translateY(-50%); z-index: 8;
   padding: 14px 0 14px 16px; border-left: var(--rule) solid color-mix(in srgb, var(--sheet) 22%, transparent); }
-@media (max-width: 767px) { .pg { display: none; } }
 .pg-l { display: grid; gap: 18px; }
 .pg-t { display: flex; align-items: center; gap: 12px; opacity: .34;
   transition: opacity .5s var(--ease-out-sine); }
 .pg-t.is-on { opacity: 1; }
 .pg-t .reg { color: var(--steel-lift); }
 .pg-w { font-family: var(--ff-display); font-style: italic; font-size: .95rem; color: var(--sheet); }
+
+/* the rail's own travel readout, drawn along the bottom of the pinned viewport */
+.rail-prog { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; z-index: 8;
+  background: color-mix(in srgb, var(--sheet) 12%, transparent); }
+.rail-prog span { position: absolute; left: 0; top: 0; bottom: 0;
+  width: calc(var(--rp, 0) * 100%); background: var(--steel-lift); }
+
+/* below the desktop switch, and under reduced motion, it is a vertical stack */
+@media (max-width: 1023px) {
+  .stepper { height: auto; }
+  .rail-vp { position: static; height: auto; overflow: visible; }
+  .rail-track { display: block; width: auto; transform: none; }
+  .fs { width: auto; height: 100svh; }
+  .fs-media { clip-path: none; }
+  .fs-img { transform: none; }
+  .fs-body { opacity: 1; transform: none; }
+  .pg, .rail-prog { display: none; }
+}
 
 .step-res { display: grid; place-items: center; gap: 18px; padding-top: clamp(46px, 6vh, 86px); }
 .res-punch { width: clamp(74px, 8vw, 116px); color: var(--sheet); }
@@ -748,10 +756,29 @@ body.loaded .hero-meta   { opacity: clamp(0, var(--fade), 1); }
   padding-block: clamp(20px, 2.2vw, 30px);
   border-bottom: var(--rule) solid color-mix(in srgb, var(--sheet) 14%, transparent);
 }
-@media (min-width: 768px) { .mk { grid-template-columns: 140px minmax(0, 1fr); } }
-@media (min-width: 1280px) { .mk { grid-template-columns: 150px 180px minmax(0, 1fr); align-items: center; } }
-.mk-img { background: var(--plate-2); aspect-ratio: 4 / 3; }
-.mk-img > img { filter: contrast(1.1); }
+@media (min-width: 768px) { .mk { grid-template-columns: 148px minmax(0, 1fr); } }
+@media (min-width: 1280px) {
+  .mk { align-items: start; }
+  .mk-txt { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 6px 30px; }
+  .mk-code { grid-column: 1; grid-row: 1; }
+  .mk-who  { grid-column: 1; grid-row: 2; margin-top: 6px; }
+  .mk-b    { grid-column: 2; grid-row: 1 / span 2; margin-top: 0; }
+}
+/* ERNA's whole hallmark archive is 67px to 300px wide; those ARE the originals.
+   Blown up to fill a column the smallest read at 17x and looked broken. They now
+   render at their own intrinsic size inside a fixed specimen chip, which is both
+   honest and the right register: a struck mark is a few millimetres of metal. */
+.mk-img {
+  background: var(--plate-2); width: 148px; height: 118px;
+  display: grid; place-items: center; overflow: hidden;
+  border: var(--rule) solid color-mix(in srgb, var(--sheet) 10%, transparent);
+}
+.mk-img > img {
+  position: static; width: auto; height: auto;
+  max-width: 100%; max-height: 100%;
+  filter: contrast(1.06);
+  image-rendering: auto;
+}
 .mk-code { font-family: var(--ff-display); font-size: var(--fs-d2); line-height: 1;
   letter-spacing: .1em; }
 .mk-who { margin-top: 8px; color: var(--steel-lift); }
@@ -891,6 +918,12 @@ body.loaded .hero-meta   { opacity: clamp(0, var(--fade), 1); }
    REDUCED MOTION. Every mechanism collapses to a plain, fully visible render.
    ========================================================================= */
 @media (prefers-reduced-motion: reduce) {
+  .stepper { height: auto; }
+  .rail-vp { position: static; height: auto; overflow: visible; }
+  .rail-track { display: block; width: auto; transform: none; }
+  .fs { width: auto; height: 100svh; clip-path: none; }
+  .fs-media { clip-path: none; }
+  .pg, .rail-prog { display: none; }
   html { scroll-behavior: auto; }
   *, *::before, *::after {
     animation-duration: .001ms !important;

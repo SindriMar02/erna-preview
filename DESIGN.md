@@ -128,8 +128,23 @@ slot. A uniform scale can only land if both renderings share line-height and tra
 `.hdr-name` now matches `.wordmark span` on both and differs only in font-size. Landing
 error is asserted in QA at **under 1px on all four edges** (currently 0.02px).
 
-**D. Sticky mask stepper.** `silfrið → eldurinn → stimpillinn`. Sticky `.masks` layer,
-three stacked sticky children revealed by mask, not fade. Resolves into the punch cartouche.
+**D. The horizontal journey (revision 4, replaces the sticky mask stepper).**
+`silfrið → eldurinn → stimpillinn` now travels sideways. A tall spacer
+(`height: calc(100svh + var(--travel))`) pins a `100svh` viewport; scroll distance maps
+1:1 to the track's horizontal travel (`maxX = track.scrollWidth - innerWidth`), written to
+`--rx` through the damped engine so the traverse inherits its inertia. This is the Búðir
+engine rebuilt native: **no GSAP, no Lenis**, which the reference needs only because it has
+no damped loop of its own. Each panel derives its own reveal from where it actually sits in
+the viewport, the native equivalent of GSAP's `containerAnimation` with left-based starts:
+`--clipR` 100→0 assembles the photograph from its leading edge (a clip reveal, never a
+transform, per Búðir §9), and `--px` drifts 7.5→-7.5 at a constant `scale(1.16)` so the
+frame never exposes an edge.
+
+Desktop only (`min-width: 1024px`, no reduced motion). Below that it is a plain vertical
+stack of full-height panels, which is the intentional fallback, not a failure — verified at
+390, 1000 and 1440+reduced-motion. **Proof of travel is that the CENTRED panel changes**
+(silfrið → eldurinn → stimpillinn); reading a transform proves nothing, because a pinned but
+frozen track passes that check.
 
 Also: `DiptychStickyMedia` (one column pinned, the other scrolls past) for the heirloom
 objects. `InlineButton` two-layer underline, `background-size: 0% 1px, 100% 1px` →

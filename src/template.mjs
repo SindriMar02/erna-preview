@@ -148,7 +148,7 @@ export function render(c, { assetBase, previewOrigin = '', noindex = false }) {
     .map(
       (m) => `
       <li class="mk">
-        <div class="mk-img js-rv">${im(m.img, m.alt)}</div>
+        <div class="mk-img">${im(m.img, m.alt)}</div>
         <div class="mk-txt">
           <p class="mk-code">${esc(m.code)}</p>
           <p class="reg mk-who">${esc(m.who)}, ${esc(m.life)}</p>
@@ -322,9 +322,10 @@ ${noindex ? '<meta name="robots" content="noindex, nofollow">\n' : ''}
     <p class="step-lead">${esc(c.process.lead)}</p>
   </div>
   <div class="stepper" id="stepper">
-    <div class="masks" id="masks">
-      ${stepMasks}
+    <div class="rail-vp">
+      <div class="rail-track" id="railTrack">${stepMasks}</div>
       <div class="pg" aria-hidden="true"><ol class="pg-l">${stepTicks}</ol></div>
+      <div class="rail-prog" aria-hidden="true"><span></span></div>
     </div>
   </div>
   <div class="step-res">

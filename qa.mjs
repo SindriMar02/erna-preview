@@ -104,33 +104,53 @@ ok('wordmark flies toward header', Math.abs(wA - wB.top) > 150, `${Math.round(wA
 ok('header slides down past hero', wB.hdrDown);
 void w0;
 
-/* ---------- sticky mask stepper: prove sideways/vertical travel ---------- */
-const stepTop = await page.evaluate(() => {
-  const s = document.querySelector('#stepper');
-  return s.getBoundingClientRect().top + scrollY;
-});
+/* ---------- THE HORIZONTAL JOURNEY ----------
+   Reading a transform is NOT proof: a pinned-but-frozen track passes that
+   check (ledger #42). The only proof of sideways travel is that the panel
+   CENTRED in the viewport actually changes. */
+const stepTop = await page.evaluate(() => document.querySelector('#stepper').getBoundingClientRect().top + scrollY);
 const stepH = await page.evaluate(() => document.querySelector('#stepper').offsetHeight);
-const readStep = () => page.evaluate(() => ({
-  clips: Array.from(document.querySelectorAll('.fs')).map((e) => e.style.getPropertyValue('--seg')),
-  on: Array.from(document.querySelectorAll('.pg-t')).findIndex((e) => e.classList.contains('is-on')),
-  word: Array.from(document.querySelectorAll('.fs')).map((e, i) => ({
-    i, vis: e.getBoundingClientRect().height > 0,
-  })).length,
-}));
-const depths = [0.08, 0.42, 0.85];
-const stepReads = [];
-for (const d of depths) {
-  await page.evaluate((y) => scrollTo(0, y), stepTop + (stepH - 900) * d);
-  await sleep(500);
-  stepReads.push(await readStep());
+const railGeo = await page.evaluate(() => {
+  const st = document.querySelector('#stepper'), tr = document.querySelector('#railTrack');
+  return { stepperH: st.offsetHeight, maxX: tr.scrollWidth - innerWidth,
+           travel: parseFloat(getComputedStyle(st).getPropertyValue('--travel')) };
+});
+ok('rail spacer matches the track travel', Math.abs(railGeo.travel - railGeo.maxX) < 2 && railGeo.maxX > 0,
+   `travel ${railGeo.travel}px, maxX ${railGeo.maxX}px, spacer ${railGeo.stepperH}px`);
+
+const railReads = [];
+for (const f of [0.02, 0.3, 0.55, 0.8, 0.98]) {
+  await page.evaluate((y) => { document.documentElement.style.scrollBehavior = 'auto'; scrollTo(0, y); },
+    Math.round(stepTop + (stepH - 900) * f));
+  await sleep(650);
+  railReads.push(await page.evaluate(() => {
+    const centred = Array.from(document.querySelectorAll('.fs')).map((e) => {
+      const r = e.getBoundingClientRect();
+      return { w: e.querySelector('.fs-word').textContent, d: Math.abs(r.left + r.width / 2 - innerWidth / 2) };
+    }).sort((x, y2) => x.d - y2.d)[0].w;
+    return { rx: parseFloat(getComputedStyle(document.querySelector('#railTrack')).getPropertyValue('--rx')),
+             centred, on: Array.from(document.querySelectorAll('.pg-t')).findIndex((e) => e.classList.contains('is-on')) };
+  }));
 }
-ok('stepper advances through 3 steps',
-  stepReads[0].on === 0 && stepReads[1].on === 1 && stepReads[2].on === 2,
-  JSON.stringify(stepReads.map((r) => r.on)));
-ok('stepper reveals by mask, plate coverage advances',
-  stepReads[0].clips[1] !== stepReads[2].clips[1],
-  `${stepReads[0].clips[1]} -> ${stepReads[2].clips[1]}`);
+const words = railReads.map((r) => r.centred);
+ok('the centred panel actually changes (real sideways travel)',
+   new Set(words).size === 3 && words[0] !== words[words.length - 1], words.join(' -> '));
+ok('rail travel is monotonic across the pin',
+   railReads.every((r, i) => i === 0 || r.rx > railReads[i - 1].rx) && railReads[4].rx > railGeo.maxX * 0.9,
+   railReads.map((r) => Math.round(r.rx)).join(' -> '));
+ok('step index follows the centred panel',
+   railReads[0].on === 0 && railReads[4].on === 2, railReads.map((r) => r.on).join(''));
 await page.screenshot({ path: `${OUT}/04-stepper.png` });
+
+/* ---------- register marks are never upscaled into mush ---------- */
+await page.evaluate(() => document.querySelector('#stimpillinn').scrollIntoView({ block: 'start' }));
+await sleep(900);
+const chips = await page.evaluate(() => Array.from(document.querySelectorAll('.mk-img img'))
+  .map((i) => ({ src: i.getAttribute('src').split('/').pop(), n: i.naturalWidth,
+                 up: +(i.getBoundingClientRect().width * devicePixelRatio / i.naturalWidth).toFixed(1) })));
+const worstUp = Math.max(...chips.map((c) => c.up));
+ok('archival marks are not upscaled past 2x', worstUp <= 2.05,
+   chips.map((c) => `${c.src} ${c.n}px @${c.up}x`).join(', '));
 
 /* ---------- wordmark landing must be pixel exact ---------- */
 const landing = await page.evaluate(() => {
@@ -150,37 +170,37 @@ ok('wordmark lands on the header mark within 1px', worstEdge < 1,
    `worst edge ${worstEdge.toFixed(2)}px  ${JSON.stringify(Object.fromEntries(Object.entries(landing).map(([k,v])=>[k,+v.toFixed(2)])))}`);
 
 /* ---------- feathered reveal is scrubbed, not one-shot ----------
-   A CSS transition also shows intermediates, so that proves nothing. The
-   property that separates scrubbed from triggered is REVERSIBILITY: scroll
-   back up and a scrubbed value falls again, a one-shot reveal stays at 1. */
-await page.evaluate(() => document.querySelector('#gengur-a-milli').scrollIntoView({ block: 'start' }));
-await sleep(500);
-const readRv = () => page.evaluate(() =>
-  Array.from(document.querySelectorAll('.hl-media')).map(e => parseFloat(getComputedStyle(e).getPropertyValue('--rv'))));
+   Two traps. (1) A CSS transition also shows intermediates, so "it animates"
+   proves nothing; the property that separates scrubbed from triggered is
+   REVERSIBILITY. (2) Since the engine is damped, a value sampled mid-sweep is
+   still CLIMBING toward its target, so every baseline must be SETTLED first or
+   the round trip compares a lagging reading against a converged one. */
+await page.evaluate(() => { document.documentElement.style.scrollBehavior = 'auto'; });
+// solve the reveal formula for rv = 0.5 rather than guessing an offset
+const revealY = await page.evaluate(() => {
+  const el = document.querySelectorAll('.hl-media')[2];
+  const r = el.getBoundingClientRect();
+  const span = r.height * 0.42 + innerHeight * 0.1;
+  const wantTop = innerHeight - 0.5 * span;
+  return Math.round(r.top + scrollY - wantTop);
+});
+const rvAt = (k) => page.evaluate((i) =>
+  parseFloat(getComputedStyle(document.querySelectorAll('.hl-media')[i]).getPropertyValue('--rv')), k);
 
-// sweep down in small steps and find a frame caught mid-reveal
-let midHit = null;
-for (let i = 0; i < 14 && !midHit; i++) {
-  await page.evaluate(() => scrollBy(0, 120));
-  await sleep(140);
-  const rv = await readRv();
-  const k = rv.findIndex(v => v > 0.08 && v < 0.92);
-  if (k >= 0) midHit = { k, v: rv[k], y: await page.evaluate(() => scrollY) };
-}
-ok('reveal passes through intermediate states', !!midHit, midHit ? `frame ${midHit.k} at --rv=${midHit.v.toFixed(3)}` : 'never caught mid-reveal');
+await page.evaluate((y) => scrollTo(0, y), revealY);
+await sleep(1100);
+const rvBase = await rvAt(2);
+ok('reveal rests at an intermediate value mid-entry', rvBase > 0.05 && rvBase < 0.95, rvBase.toFixed(3));
 
-let reversible = false, detail = 'no mid-reveal frame to test';
-if (midHit) {
-  await page.evaluate(() => scrollBy(0, 260));
-  await sleep(550);
-  const fwd = (await readRv())[midHit.k];
-  await page.evaluate(() => scrollBy(0, -260));
-  await sleep(550);
-  const back = (await readRv())[midHit.k];
-  reversible = fwd > midHit.v + 0.02 && Math.abs(back - midHit.v) < 0.05;
-  detail = `${midHit.v.toFixed(3)} -> ${fwd.toFixed(3)} -> ${back.toFixed(3)} on scroll back`;
-}
-ok('reveal is scrubbed by scroll, not one-shot', reversible, detail);
+await page.evaluate((y) => scrollTo(0, y), revealY + 260);
+await sleep(1100);
+const rvFwd = await rvAt(2);
+await page.evaluate((y) => scrollTo(0, y), revealY);
+await sleep(1100);
+const rvBack = await rvAt(2);
+ok('reveal is scrubbed by scroll, not one-shot',
+   rvFwd > rvBase + 0.04 && Math.abs(rvBack - rvBase) < 0.02,
+   `${rvBase.toFixed(3)} -> ${rvFwd.toFixed(3)} -> ${rvBack.toFixed(3)} on scroll back`);
 
 /* ---------- the rolling label swaps with the scroll position ---------- */
 const rollA = await page.evaluate(() => document.querySelector('.dip-now-i.is-on')?.dataset.di);
