@@ -153,6 +153,13 @@
   const chPP = chan(0.15);
   const chTP = chan(0.14);
   const chDP = chan(0.15);
+  /* scroll VELOCITY, damped. Position channels answer "where"; this answers
+     "how fast", and it is what gives the silver weight: frames lag a few px
+     behind a hard flick and settle when the scroll stops. The idea is the
+     kinetic-gallery velocity response, at a restraint fit for 1924 — a
+     vertical lag, never a skew. */
+  const chVel = chan(0.12);
+  let prevY = scrollY;
 
   /* price index: hover on pointer devices, scroll-follow on touch */
   const prList = $('#prList');
@@ -223,6 +230,10 @@
     const y = scrollY;
     const vh = M.vh;
 
+    /* normalized scroll velocity in [-1, 1]; 2600 px/s maps to full weight */
+    const vNorm = adv(chVel, clamp((y - prevY) / Math.max(dt, 0.004) / 2600, -1, 1), dt);
+    prevY = y;
+
     /* --- hero pinch: one damped variable, CSS does the geometry -------- */
     if (heroMask) {
       const v = clamp(adv(chMask, clamp(y / (M.heroH * 0.92)), dt));
@@ -270,7 +281,9 @@
       const e = scrubEls[i], r = e.r;
       if (r.bottom < -vh || r.top > vh * 2) continue;
       const off = clamp((r.top + r.height / 2 - vh / 2) / vh, -1, 1);
-      const par = adv(e.chPar, off * e.amp, dt);
+      /* position drift plus the velocity weight: scrolling down, frames hang
+         a beat low, then the .22s damping settles them into place */
+      const par = adv(e.chPar, off * e.amp + vNorm * 13, dt);
       if (e.par !== par) { e.el.style.setProperty('--par', par.toFixed(2) + 'px'); e.par = par; }
       if (!e.masked) continue;
       const rv = adv(e.chRv, clamp((vh - r.top) / (r.height * 0.42 + vh * 0.1)), dt);
