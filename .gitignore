@@ -1,0 +1,6 @@
+node_modules/
+package-lock.json
+research/raw*/
+research/thumbs/
+research/*.png
+qa-shots/
