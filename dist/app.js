@@ -211,11 +211,17 @@
       const local = clamp((y - M.stepTop) / Math.max(1, M.stepH - M.vh));
       const n = stepEls.length;
       const idx = Math.min(n - 1, Math.floor(local * n + 0.0001));
-      stepEls.forEach((el, i) => {
-        // successive media are revealed BY MASK, not by fade
-        const seg = clamp(local * n - i);
-        el.style.clipPath = i === 0 ? 'inset(0 0 0 0)' : `inset(${((1 - seg) * 100).toFixed(2)}% 0 0 0)`;
-      });
+      for (let i = 0; i < n; i++) {
+        // one value per plate: how far it has arrived. The plate below it gets
+        // the same number as its recede amount, so the stack has depth.
+        const seg = i === 0 ? 1 : clamp(local * n - i);
+        const el = stepEls[i];
+        if (el._seg !== seg) { el.style.setProperty('--seg', seg.toFixed(4)); el._seg = seg; }
+        if (i > 0) {
+          const below = stepEls[i - 1];
+          if (below._out !== seg) { below.style.setProperty('--out', seg.toFixed(4)); below._out = seg; }
+        }
+      }
       if (idx !== stepState) {
         stepState = idx;
         ticks.forEach((t, i) => t.classList.toggle('is-on', i === idx));

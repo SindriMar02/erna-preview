@@ -111,7 +111,7 @@ const stepTop = await page.evaluate(() => {
 });
 const stepH = await page.evaluate(() => document.querySelector('#stepper').offsetHeight);
 const readStep = () => page.evaluate(() => ({
-  clips: Array.from(document.querySelectorAll('.fs')).map((e) => e.style.clipPath),
+  clips: Array.from(document.querySelectorAll('.fs')).map((e) => e.style.getPropertyValue('--seg')),
   on: Array.from(document.querySelectorAll('.pg-t')).findIndex((e) => e.classList.contains('is-on')),
   word: Array.from(document.querySelectorAll('.fs')).map((e, i) => ({
     i, vis: e.getBoundingClientRect().height > 0,
@@ -127,7 +127,7 @@ for (const d of depths) {
 ok('stepper advances through 3 steps',
   stepReads[0].on === 0 && stepReads[1].on === 1 && stepReads[2].on === 2,
   JSON.stringify(stepReads.map((r) => r.on)));
-ok('stepper reveals by mask, clip-paths differ',
+ok('stepper reveals by mask, plate coverage advances',
   stepReads[0].clips[1] !== stepReads[2].clips[1],
   `${stepReads[0].clips[1]} -> ${stepReads[2].clips[1]}`);
 await page.screenshot({ path: `${OUT}/04-stepper.png` });

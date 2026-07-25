@@ -217,7 +217,11 @@ body.loaded .loader { transition: opacity .3s .55s var(--ease-out-sine); opacity
   .hdr-name { opacity: 1; }
   .wordmark { display: none; }
   .hero-h1-name { color: var(--chrome); }
-  .fs { position: relative; clip-path: none; height: 100svh; }
+  .fs-body { opacity: 1; transform: none; }
+  .fs { --seg: 1; --out: 0; transform: none; -webkit-mask-image: none; mask-image: none; }
+  .fs::before { opacity: 0; }
+  .fs-img { transform: none; }
+  .fs { position: relative; height: 100svh; }
   .stepper { height: auto; }
   .masks { position: relative; height: auto; overflow: visible; }
   .pg { display: none; }
@@ -590,6 +594,9 @@ body.loaded .hero-meta   { opacity: clamp(0, var(--fade), 1); }
 .js-rv > img {
   /* oversized on both axes: the blur would otherwise pull transparency in at
      the edges and soften the frame's own border */
+  /* max-width:100% in the reset clamps this back to the box and the negative
+     left inset then leaves a strip of panel showing on the right */
+  max-width: none;
   position: absolute; left: -2.5%; top: -7%;
   width: 105%; height: 114%; object-fit: cover;
   transform: translate3d(0, var(--par), 0) scale(calc(1.06 - var(--rv) * .06));
@@ -634,21 +641,56 @@ body.loaded .hero-meta   { opacity: clamp(0, var(--fade), 1); }
 .step-lead { margin-top: 20px; color: color-mix(in srgb, var(--sheet) 62%, transparent); }
 .stepper { position: relative; height: 215svh; }
 .masks { position: sticky; top: 0; height: 100svh; overflow: clip; }
+/* Successive plates are revealed BY MASK, never by fade. The edge is a wide
+   feather rather than a clip-path line, so it does not read as a scanline, and
+   the plate underneath RECEDES as it is covered: it scales back and dims, which
+   is what gives the stack depth instead of one flat card sliding over another. */
 .fs {
   position: absolute; inset: 0;
-  clip-path: inset(0 0 100% 0);
-  will-change: clip-path;
+  --seg: 0; --out: 0;
+  transform: scale(calc(1 - var(--out) * .055));
+  transform-origin: 50% 42%;
+  -webkit-mask-image: linear-gradient(to top,
+    #000 calc(var(--seg) * 116% - 16%), transparent calc(var(--seg) * 116%));
+  mask-image: linear-gradient(to top,
+    #000 calc(var(--seg) * 116% - 16%), transparent calc(var(--seg) * 116%));
+  will-change: transform, mask-image;
 }
-.fs[data-step='0'] { clip-path: inset(0 0 0 0); }
-.fs-media { position: absolute; inset: 0; }
-.fs-img { width: 100%; height: 100%; object-fit: cover; }
+.fs[data-step='0'] { --seg: 1; -webkit-mask-image: none; mask-image: none; }
+/* the dimming veil for the receding plate, above its own content */
+.fs::before {
+  content: ''; position: absolute; inset: 0; z-index: 5; pointer-events: none;
+  background: var(--plate); opacity: calc(var(--out) * .5);
+}
+.fs-media { position: absolute; inset: 0; overflow: hidden; }
+.fs-img {
+  max-width: none;
+  position: absolute; left: -3%; top: -3%; width: 106%; height: 106%; object-fit: cover;
+  /* the arriving plate settles rather than appearing already at rest */
+  transform: scale(calc(1 + (1 - var(--seg)) * .07));
+  will-change: transform;
+}
+.fs-body { z-index: 6; }
 .fs-media::after {
   content: ''; position: absolute; inset: 0;
   background: linear-gradient(180deg, rgba(9,7,14,.72) 0%, rgba(9,7,14,.28) 38%, rgba(9,7,14,.88) 100%);
 }
 .fs-body {
+  z-index: 6;
   position: absolute; left: var(--gut); right: var(--gut); bottom: clamp(44px, 9vh, 110px);
   max-width: 46ch; color: var(--sheet);
+  /* The mask feather is wide on purpose, but text read through it means two
+     plates' copy overlapping. Copy is gated on its own curve: it arrives only
+     in the last third of the plate's travel and leaves as soon as the next
+     plate starts covering it. */
+  /* Crossfading in place either ghosts two labels over each other or leaves a
+     blank window. They PASS each other instead: the leaving copy rises out
+     while the arriving copy rises in, which is the same rolling-label law the
+     diptych column already uses. */
+  --in: clamp(0, (var(--seg) - .15) / .40, 1);
+  --gone: clamp(0, var(--out) / .45, 1);
+  opacity: calc(var(--in) * (1 - var(--gone)));
+  transform: translate3d(0, calc((1 - var(--in)) * 34px - var(--gone) * 34px), 0);
 }
 .fs-n { color: var(--steel-lift); }
 .fs-word {
@@ -877,7 +919,11 @@ body.loaded .hero-meta   { opacity: clamp(0, var(--fade), 1); }
   .wordmark { display: none; }
   .hero-h1-name { color: var(--chrome); }
   .hero-mask { clip-path: none; }
-  .fs { position: relative; clip-path: none; height: 100svh; }
+  .fs-body { opacity: 1; transform: none; }
+  .fs { --seg: 1; --out: 0; transform: none; -webkit-mask-image: none; mask-image: none; }
+  .fs::before { opacity: 0; }
+  .fs-img { transform: none; }
+  .fs { position: relative; height: 100svh; }
   .stepper { height: auto; }
   .masks { position: relative; height: auto; overflow: visible; }
   .pg { display: none; }
