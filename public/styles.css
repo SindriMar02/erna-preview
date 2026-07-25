@@ -384,7 +384,8 @@ body.is-menu .wordmark { opacity: 0 !important; visibility: hidden; }
     calc(50% + 50% * var(--mask-scale-h)) calc(50% + 50% * var(--mask-scale-v)),
     calc(50% - 50% * var(--mask-scale-h)) calc(50% + 50% * var(--mask-scale-v))
   );
-  transition: clip-path .2s var(--ease-out-quart);
+  /* no transition here: the JS channel is critically damped already, and a
+     CSS transition on top double-smooths into visible lag */
   will-change: clip-path;
 }
 .hero-v, .hero-fallback {

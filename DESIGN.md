@@ -151,6 +151,18 @@ first pass. The sticky diptych column shows the current object's name entering
 progress rail. Structure taken from 21st.dev's *Scroll Reveal Content A* (numbered blocks
 + growing progress line + synchronized panel).
 
+**G. The damped engine (revision 3).** Every scroll-driven channel is critically damped
+toward its target (`cur += (tgt - cur) * (1 - e^(-dt/tau))`) instead of written raw.
+Raw scroll maps values 1:1 to wheel events, so motion inherits their stepping; damping
+gives the page inertia without hijacking scroll. Time constants are layered on purpose:
+hero pinch and wordmark flight track tight (tau .09s), the stepper .12s, media reveals
+.15s, content rises .16s, parallax floats at .22s. The rAF loop idle-cancels once every
+channel converges (epsilon snap) and wakes on the next scroll. The old `.2s` CSS
+transition on the hero clip-path was removed: stacked on the damped channel it
+double-smoothed into visible lag. Measured proof: one instant scroll jump now produces
+29 distinct intermediate values across 30 frames where the raw engine produced one step,
+at 60.1 fps with zero long tasks.
+
 Performance: all rects are **read** in one pass, then all custom properties **written**,
 so a write never invalidates style ahead of the next read. Measured 60.2 fps with zero
 long tasks over a full-page scroll sweep.

@@ -172,10 +172,10 @@ ok('reveal passes through intermediate states', !!midHit, midHit ? `frame ${midH
 let reversible = false, detail = 'no mid-reveal frame to test';
 if (midHit) {
   await page.evaluate(() => scrollBy(0, 260));
-  await sleep(220);
+  await sleep(550);
   const fwd = (await readRv())[midHit.k];
   await page.evaluate(() => scrollBy(0, -260));
-  await sleep(220);
+  await sleep(550);
   const back = (await readRv())[midHit.k];
   reversible = fwd > midHit.v + 0.02 && Math.abs(back - midHit.v) < 0.05;
   detail = `${midHit.v.toFixed(3)} -> ${fwd.toFixed(3)} -> ${back.toFixed(3)} on scroll back`;
@@ -217,7 +217,7 @@ const tlReads = [];
 for (const f of [0, 0.4, 0.9]) {
   await page.evaluate((y) => { document.documentElement.style.scrollBehavior = 'auto'; scrollTo(0, y); },
     Math.max(0, Math.round(tlTop - 900 * 0.62 + tlH * f)));
-  await sleep(420);
+  await sleep(600);
   tlReads.push(await readTl());
 }
 ok('timeline rail fills with scroll',
@@ -233,7 +233,7 @@ await sleep(700);
 const riseA = await page.evaluate(() => Array.from(document.querySelectorAll('.ct-r')).map((e) => parseFloat(getComputedStyle(e).getPropertyValue('--ri') || 0)));
 const staggered = riseA.some((v) => v > 0.02 && v < 0.98);
 await page.evaluate(() => scrollBy(0, -300));
-await sleep(400);
+await sleep(700);
 const riseB = await page.evaluate(() => Array.from(document.querySelectorAll('.ct-r')).map((e) => parseFloat(getComputedStyle(e).getPropertyValue('--ri') || 0)));
 ok('content rise is staggered and scrubbed',
   staggered && riseB.some((v, i) => v < riseA[i] - 0.02),
@@ -243,7 +243,7 @@ ok('content rise is staggered and scrubbed',
 const spy = [];
 for (const id of ['#gengur-a-milli', '#sagan', '#hafa-samband']) {
   await page.evaluate((s) => { document.documentElement.style.scrollBehavior = 'auto'; document.querySelector(s).scrollIntoView({ block: 'start' }); }, id);
-  await sleep(420);
+  await sleep(600);
   spy.push(await page.evaluate(() => ({
     cur: Array.from(document.querySelectorAll('.hdr-nav a')).findIndex((a) => a.classList.contains('is-current')),
     pp: parseFloat(getComputedStyle(document.querySelector('.hdr-prog')).getPropertyValue('--pp') || 0),
