@@ -88,7 +88,8 @@
 
 /* ---------------------------------------------------------------- reset -- */
 *, *::before, *::after { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+/* body alone does not reliably prevent sideways scroll in iOS Safari */
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; overflow-x: clip; }
 body {
   margin: 0;
   background: var(--sheet);
@@ -570,8 +571,10 @@ body.loaded .hero-meta   { opacity: clamp(0, var(--fade), 1); }
   font-family: var(--ff-display); font-weight: 300; font-size: var(--fs-d3);
   line-height: 1.34;
 }
+@media (max-width: 380px) { .dip-now { font-size: 1.05rem; } }
 .dip-now-i {
-  position: absolute; inset: 0; white-space: nowrap;
+  position: absolute; inset: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   transform: translateY(105%); opacity: 0;
   transition: transform .8s var(--ease-out-expo), opacity .45s var(--ease-out-sine);
 }
@@ -633,7 +636,9 @@ body.loaded .hero-meta   { opacity: clamp(0, var(--fade), 1); }
   padding-right: 12px; border-right: var(--rule) solid color-mix(in srgb, var(--ink) 24%, transparent);
 }
 .hl-h { font-family: var(--ff-display); font-weight: 300; font-size: var(--fs-d2);
-  line-height: 1.14; margin-top: 12px; }
+  line-height: 1.14; margin-top: 12px;
+  /* Brúðkaupsgaffallinn and friends outrun a narrow column */
+  overflow-wrap: break-word; hyphens: auto; }
 .hl-b { margin-top: 16px; max-width: 46ch; color: var(--ink-mute); }
 .hl-price {
   margin-top: 22px; padding-top: 16px;
@@ -682,8 +687,12 @@ body.loaded .hero-meta   { opacity: clamp(0, var(--fade), 1); }
   z-index: 6;
   position: absolute; left: var(--gut); right: var(--gut); bottom: clamp(44px, 9vh, 110px);
   max-width: 46ch; color: var(--sheet);
-  opacity: clamp(0, (var(--seg) - .12) / .38, 1);
-  transform: translate3d(calc((1 - var(--seg)) * 46px), 0, 0);
+  /* The copy lives inside its panel, so without this it slides off the left
+     edge the instant the rail moves and you read "erling silfur". It is
+     counter-translated to stay put in the viewport while its own panel still
+     covers the screen, then released to travel out with it. */
+  opacity: calc(clamp(0, (var(--seg) - .12) / .38, 1) * (1 - var(--leave, 0)));
+  transform: translate3d(calc(var(--bodyX, 0px) + (1 - var(--seg)) * 40px), 0, 0);
 }
 .fs-n { color: var(--steel-lift); }
 .fs-word {
@@ -780,6 +789,7 @@ body.loaded .hero-meta   { opacity: clamp(0, var(--fade), 1); }
   image-rendering: auto;
 }
 .mk-code { font-family: var(--ff-display); font-size: var(--fs-d2); line-height: 1;
+  overflow-wrap: break-word;
   letter-spacing: .1em; }
 .mk-who { margin-top: 8px; color: var(--steel-lift); }
 .mk-b { color: color-mix(in srgb, var(--sheet) 72%, transparent); max-width: 60ch; }
@@ -838,6 +848,22 @@ body.loaded .hero-meta   { opacity: clamp(0, var(--fade), 1); }
 .ar-f figcaption { color: var(--ink-mute); }
 
 
+/* A source smaller than the panel it sits in gets centred at up to 2x its own
+   pixels instead of cover-cropped and upscaled. ERNA's archive tops out where
+   it tops out; the honest presentation is a specimen on a plate. */
+.hl-media:has(> img[data-small]),
+.pr-panel:has(> img[data-small]) { background: var(--chrome); }
+.hl-media > img[data-small],
+.pr-panel > img[data-small] {
+  object-fit: contain;
+  left: 50%; top: 50%;
+  width: auto; height: auto;
+  max-width: min(86%, calc(var(--nw) * 2px));
+  max-height: min(86%, calc(var(--nh) * 2px));
+  transform: translate3d(calc(-50% ), calc(-50% + var(--par, 0px)), 0) scale(calc(1.02 - var(--rv) * .02));
+}
+.pr-panel > img[data-small] { transform: translate(-50%, -50%); }
+
 /* --- price index: the one functional asymmetric split ------------------- */
 .pr-eyebrow { color: var(--steel-ink); margin-bottom: 14px; }
 .pr-lead { margin-top: 22px; max-width: 60ch; color: var(--ink-mute); }
@@ -861,7 +887,8 @@ body.loaded .hero-meta   { opacity: clamp(0, var(--fade), 1); }
 }
 .pr-r.is-on .pr-b::before, .pr-b:hover::before, .pr-b:focus-visible::before { opacity: 1; transform: none; }
 .pr-r.is-on .pr-b, .pr-b:hover { padding-left: 28px; }
-.pr-name { font-family: var(--ff-display); font-size: var(--fs-d3); line-height: 1.3; }
+.pr-name { font-family: var(--ff-display); font-size: var(--fs-d3); line-height: 1.3;
+  overflow-wrap: break-word; hyphens: auto; }
 .pr-price { color: var(--ink-mute); white-space: nowrap; font-variant-numeric: tabular-nums; }
 
 .pr-panel { position: relative; aspect-ratio: 4 / 5; background: var(--chrome); overflow: hidden; }

@@ -123,22 +123,35 @@
 
   /* Content blocks that rise as they cross the reading line. Each carries its
      index within its group as a stagger, and its own damped channel. */
+  /* start: fraction of the viewport where the block begins to arrive
+     span:  how much scroll it takes to finish
+     step:  per-item stagger in px, capped, so a long list still cascades
+            without the last rows waiting hundreds of pixels */
   const RISE_GROUPS = [
-    '.thesis .lede, .thesis .pull, .thesis-cta',
-    '.divider',
-    '.step-lead',
-    '.marks-lead, .marks-label',
-    '.mk', '.marks-link',
-    '.story-lead, .fnd', '.qt', '.ar-f',
-    '.pr-eyebrow, .h-plain, .pr-lead', '.pr-r', '.pr-note',
-    '.ct-lead, .ct-notice', '.ct-r', '.ct-btns, .ct-ship',
-    '.ft-mark, .ft-txt, .ft-end',
+    { sel: '.thesis .lede, .thesis .pull, .thesis-cta' },
+    { sel: '.divider' },
+    { sel: '.step-lead' },
+    { sel: '.marks-lead, .marks-label' },
+    { sel: '.mk', step: 26, cap: 3 },
+    { sel: '.marks-link' },
+    { sel: '.story-lead, .fnd' },
+    { sel: '.qt' },
+    { sel: '.ar-f', step: 26, cap: 3 },
+    { sel: '.pr-eyebrow, .h-plain, .pr-lead' },
+    // 12 rows: a small, quickly-capped stagger, starting a touch earlier
+    { sel: '.pr-r', step: 13, cap: 5, start: 1.02, span: 0.1 },
+    { sel: '.pr-note' },
+    { sel: '.ct-lead, .ct-notice' },
+    { sel: '.ct-r', step: 15, cap: 5, start: 1.0, span: 0.11 },
+    { sel: '.ct-btns, .ct-ship' },
+    { sel: '.ft-mark, .ft-txt, .ft-end' },
   ];
   const riseEls = [];
-  RISE_GROUPS.forEach((sel) => {
-    $$(sel).forEach((el, i) => {
+  RISE_GROUPS.forEach((g) => {
+    const step = g.step ?? 30, cap = g.cap ?? 6, start = g.start ?? 0.98, span = g.span ?? 0.13;
+    $$(g.sel).forEach((el, i) => {
       el.setAttribute('data-rise', '');
-      riseEls.push({ el, stagger: Math.min(i, 8) * 34, ch: chan(0.16), out: -1 });
+      riseEls.push({ el, stagger: Math.min(i, cap) * step, start, span, ch: chan(0.14), out: -1 });
     });
   });
 
@@ -148,7 +161,7 @@
     ...$$('.js-par').map((el) => ({ el, masked: false, amp: -34, chRv: null, chPar: chan(0.22), rv: -1, par: null, r: null })),
   ];
 
-  stepEls.forEach((el) => { el._seg = -1; el._px = null; });
+  stepEls.forEach((el) => { el._seg = -1; el._px = null; el._bodyX = null; el._leave = null; });
   const chRail = chan(0.11);
   let lastMaxX = -1;
   /* the journey is desktop-only; below this it is a vertical stack by design */
@@ -290,6 +303,12 @@
         }
         const drift = 7.5 - pass * 15;
         if (el._px !== drift) { el.style.setProperty('--px', drift.toFixed(2)); el._px = drift; }
+        // hold the copy in the viewport while its panel still fills the screen
+        const holdMax = w * 0.62;
+        const bodyX = clamp(-px, 0, holdMax);
+        const leave = clamp((-px - w * 0.45) / (w * 0.25));
+        if (el._bodyX !== bodyX) { el.style.setProperty('--bodyX', bodyX.toFixed(1) + 'px'); el._bodyX = bodyX; }
+        if (el._leave !== leave) { el.style.setProperty('--leave', leave.toFixed(3)); el._leave = leave; }
         const d = Math.abs(px + w / 2 - vw / 2);
         if (d < bestD) { bestD = d; best = i; }
       }
@@ -320,7 +339,7 @@
       const e = riseEls[i];
       const r = e.el.getBoundingClientRect();
       if (r.bottom < -80 || r.top > vh * 1.25) continue;
-      const ri = adv(e.ch, clamp((vh * 0.9 - r.top - e.stagger) / (vh * 0.16)), dt);
+      const ri = adv(e.ch, clamp((vh * e.start - r.top - e.stagger) / (vh * e.span)), dt);
       if (e.out !== ri) { e.el.style.setProperty('--ri', ri.toFixed(3)); e.out = ri; }
     }
 

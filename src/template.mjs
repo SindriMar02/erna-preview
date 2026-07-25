@@ -1,4 +1,10 @@
 import { SITE } from './content.mjs';
+import SIZES from './img-sizes.json' with { type: 'json' };
+
+/* Below this natural width a source cannot fill a large panel without visible
+   upscaling. ERNA's archive has no bigger originals (checked their media API),
+   so those images are presented as centred specimens instead of blown up. */
+const SMALL_UNDER = 620;
 
 const esc = (s = '') =>
   String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -59,16 +65,17 @@ const divider = () => `<div class="divider" aria-hidden="true"><span class="divi
 const inlineBtn = (href, label, extra = '') =>
   `<a class="ib" href="${esc(href)}"${extra}><span>${esc(label)}</span></a>`;
 
-const img = (name, alt, cls = '', extra = '') =>
-  `<img class="${cls}" src="../img/${name}" alt="${esc(alt)}" loading="lazy" decoding="async"${extra}>`;
-
 /* ------------------------------------------------------------------ */
 
 export function render(c, { assetBase, previewOrigin = '', noindex = false }) {
   const A = assetBase; // '' for /, '../' for /en/
   const ORIGIN = previewOrigin || SITE.origin;
-  const im = (name, alt, cls = '', extra = '') =>
-    `<img class="${cls}" src="${A}img/${name}" alt="${esc(alt)}" loading="lazy" decoding="async"${extra}>`;
+  const im = (name, alt, cls = '', extra = '') => {
+    const [w, h] = SIZES[name] || [];
+    const dim = w ? ` width="${w}" height="${h}" style="--nw:${w};--nh:${h}"` : '';
+    const small = w && w < SMALL_UNDER ? ' data-small' : '';
+    return `<img class="${cls}" src="${A}img/${name}" alt="${esc(alt)}" loading="lazy" decoding="async"${dim}${small}${extra}>`;
+  };
 
   const jsonld = {
     '@context': 'https://schema.org',
@@ -179,7 +186,7 @@ export function render(c, { assetBase, previewOrigin = '', noindex = false }) {
 
   const priceImgs = c.prices.items
     .filter((p) => !p.group)
-    .map((p, i) => `<img class="pr-img${i === 0 ? ' is-on' : ''}" data-pri="${i}" src="${A}img/${p.img}" alt="${esc(p.alt)}" loading="lazy" decoding="async">`)
+    .map((p, i) => im(p.img, p.alt, `pr-img${i === 0 ? ' is-on' : ''}`, ` data-pri="${i}"`))
     .join('');
 
   const contactRows = c.contact.rows
