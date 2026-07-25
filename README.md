@@ -3,7 +3,18 @@
 Award-level redesign concept for **erna.is** (Skipholt 3, Reykjavík, est. 3 February 1924),
 built as a system transplant of `verostudio.com` skinned entirely on ERNA's own material.
 
-**Not deployed. Not sent. ERNA is in summer closure until 4 August 2026.**
+**Live preview (noindex):** https://sindrimar02.github.io/erna-preview
+
+**Not sent. ERNA is in summer closure until 4 August 2026.** The email is drafted in
+`outreach-draft.md` and still needs the live link pasted in.
+
+```bash
+./deploy.sh     # builds with PREVIEW_ORIGIN and pushes dist to gh-pages
+```
+
+The deploy runs from an isolated git worktree on purpose: the `gh-pages` branch keeps its
+files at the repo root, so cleaning that branch inside the main checkout deletes the source
+tree. Verify with `git ls-tree --name-only origin/gh-pages` after every deploy.
 
 Read `DESIGN.md` first. It is the locked system, and section 6.0 is the honesty log.
 
@@ -18,7 +29,7 @@ node src/build.mjs && node server.mjs
 Then open `http://localhost:8791/` (Icelandic) or `http://localhost:8791/en/` (English).
 
 ```bash
-node qa.mjs      # 26 headless-Chrome checks: mechanisms, a11y, reduced motion, no-JS, EN
+node qa.mjs      # 32 headless-Chrome checks: mechanisms, a11y, reduced motion, no-JS, EN
 node a11y.mjs    # pixel-accurate contrast + tap-target audit
 ```
 
