@@ -99,7 +99,9 @@ body {
   line-height: 1.62;
   font-weight: 400;
   -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
+  /* clip, not hidden: hidden makes body a scroll container and kills every
+     position:sticky pin inside it in Chrome (proven on the Orr build 2026-08-11) */
+  overflow-x: clip;
 }
 body.is-loading { overflow: hidden; }
 body.is-menu    { overflow: hidden; }
