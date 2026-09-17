@@ -270,7 +270,9 @@
       hdr.classList.toggle('is-named', p >= 0.999);
     }
 
-    if (hdr) hdr.classList.toggle('is-down', y > M.heroH * 0.75);
+    /* No scrolled state: the bar is constant glass from first paint. See the
+       mobile chrome standard — a bar whose background animates splits its
+       layers on iOS. Do not reintroduce this toggle. */
 
     /* --- THE HORIZONTAL JOURNEY ---------------------------------------
        Scroll distance maps 1:1 to track travel. One damped channel writes

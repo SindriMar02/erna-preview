@@ -90,6 +90,11 @@
 *, *::before, *::after { box-sizing: border-box; }
 /* body alone does not reliably prevent sideways scroll in iOS Safari */
 html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; overflow-x: clip; }
+/* Safari 26 samples fixed edge elements' background-color and falls back to
+   BODY's for the status strip and the band under the URL bar. Both are sheet. */
+html, body { background-color: var(--sheet); }
+/* content passes under a permanent bar, so anchor jumps must stop short */
+[id] { scroll-margin-top: 86px; }
 body {
   margin: 0;
   background: var(--sheet);
@@ -242,29 +247,36 @@ body.loaded .loader { transition: opacity .3s .55s var(--ease-out-sine); opacity
 /* The header is present from the first frame so the menu is always reachable.
    Over the hero it carries no plate and chrome ink; the Vero slide-down lands
    as the plate and the ink arriving together once the hero is mostly past. */
-.hdr {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
-  color: var(--chrome);
-  transition: color .5s var(--ease-out-sine);
+/* THE AWNING — first element in flow. A fixed element paints ZERO pixels
+   above the layout viewport; the iOS status-bar / Dynamic Island strip
+   renders the SCROLLING document, and position:sticky lives in that layer.
+   Stuck at top:-100px it rests inside the strip and keeps it solid sheet at
+   every scroll position. At rest it is the headroom that keeps the bar out
+   of the island zone. Permanent, no state, requires overflow-x:clip. */
+.awning {
+  position: sticky; top: -100px; height: 106px; flex: none;
+  z-index: 199; background: var(--sheet); pointer-events: none;
 }
-.hdr.is-down { color: var(--ink); }
+
+/* THE CONSTANT BAR. The chrome used to start transparent with light text over
+   the hero and only become glass once scrolled. Animating a backdrop-filter
+   bar's background splits its layers on iOS, and the standard wants the glass
+   present from FIRST PAINT — so the bar is now always the sheet, and the text
+   is always ink. No transition, no scrolled state. Do not put one back. */
+.hdr {
+  position: fixed; inset: 0 0 auto 0; z-index: 200;
+  color: var(--ink);
+}
 .hdr-in {
   display: flex; align-items: center; justify-content: space-between;
   gap: 24px;
   max-width: var(--maxw); margin-inline: auto;
   padding: 14px var(--gut);
-  background: transparent;
-  border-bottom: var(--rule) solid transparent;
-  clip-path: inset(0 0 0 0);
-  transition: background .5s var(--ease-in-out-quart),
-              border-color .5s var(--ease-in-out-quart),
-              backdrop-filter .5s var(--ease-in-out-quart);
-}
-.hdr.is-down .hdr-in {
   background: color-mix(in srgb, var(--sheet) 88%, transparent);
-  backdrop-filter: blur(14px) saturate(1.1);
-  -webkit-backdrop-filter: blur(14px) saturate(1.1);
-  border-bottom-color: color-mix(in srgb, var(--ink) 12%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: var(--rule) solid color-mix(in srgb, var(--ink) 12%, transparent);
+  clip-path: inset(0 0 0 0);
 }
 /* line-height .84 on the wordmark (needed for the exact landing) collapses
    this link's box to 18px, so the hit area is set explicitly */
@@ -305,8 +317,7 @@ body.loaded .loader { transition: opacity .3s .55s var(--ease-out-sine); opacity
   padding: 9px 18px; border: var(--rule) solid currentColor; background-image: none;
   transition: background-color .35s var(--ease-out-sine), color .35s var(--ease-out-sine);
 }
-.hdr-cta:hover { background-color: var(--chrome); color: var(--plate); }
-.hdr.is-down .hdr-cta:hover { background-color: var(--ink); color: var(--sheet); }
+.hdr-cta:hover { background-color: var(--ink); color: var(--sheet); }
 
 /* the menu ground is the light sheet, so the burger has to darken with it,
    and the fixed hero wordmark has to get out from behind it */
@@ -521,9 +532,8 @@ body.loaded .hero-meta   { opacity: clamp(0, var(--fade), 1); }
   position: absolute; left: 0; bottom: -1px; height: 1px;
   width: calc(var(--pp, 0) * 100%);
   background: var(--steel);
-  opacity: 0; transition: opacity .4s var(--ease-out-sine);
+  opacity: .85;
 }
-.hdr.is-down .hdr-prog { opacity: .85; }
 
 /* scrollspy: the section you are in is the only one at full strength */
 /* .52 read as 3.67:1 once the header sits on the silver sheet; .66 is the

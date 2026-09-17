@@ -233,6 +233,9 @@ ${noindex ? '<meta name="robots" content="noindex, nofollow">\n' : ''}
 
 <a class="skip" href="#main">${esc(c.skip)}</a>
 
+<!-- THE AWNING — first element in flow, sticky into the iOS status strip. -->
+<div class="awning" aria-hidden="true"></div>
+
 <!-- ---------------------------------------------------------------- A. the aperture -->
 <div class="loader" id="loader" aria-hidden="true">
   <div class="loader-plate"></div>
